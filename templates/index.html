@@ -3,75 +3,210 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fok v15 - Yapay Zeka</title>
+    <title>Gemini Stil - Fok AI</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background-color: #ffffff; margin: 0; display: flex; flex-direction: column; height: 100vh; }
-        
-        /* Mesaj Alanı */
-        #chat-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
-        .message { max-width: 80%; padding: 15px; border-radius: 15px; line-height: 1.5; position: relative; }
-        
-        /* Kullanıcı Mesajı */
-        .user-message { align-self: flex-end; background-color: #f1f3f4; color: #1f1f1f; border-bottom-right-radius: 2px; }
-        
-        /* Fok (Bot) Mesajı */
-        .bot-message { align-self: flex-start; background-color: #e8f0fe; color: #1967d2; border-bottom-left-radius: 2px; }
-        .bot-message::before { content: "🦭 "; }
+        :root {
+            --bg-color: #131314;
+            --sidebar-bg: #1e1f20;
+            --text-color: #e3e3e3;
+            --input-bg: #1e1f20;
+            --accent-color: #4285f4;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Kenar Çubuğu (Sidebar) */
+        #sidebar {
+            width: 260px;
+            background-color: var(--sidebar-bg);
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            border-right: 1px solid #333;
+        }
+
+        .new-chat {
+            background: #2d2f31;
+            padding: 12px;
+            border-radius: 25px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        /* Ana Sohbet Alanı */
+        #main-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        #chat-window {
+            width: 100%;
+            max-width: 800px;
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .message-row {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+        }
+
+        .icon {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .user-icon { background: #5c5c5c; }
+        .bot-icon { background: linear-gradient(45deg, #4285f4, #9b72cb); }
+
+        .text {
+            line-height: 1.6;
+            font-size: 16px;
+            white-space: pre-wrap;
+        }
 
         /* Giriş Alanı */
-        .input-area { padding: 30px; background: white; border-top: 1px solid #eee; display: flex; justify-content: center; }
-        .input-wrapper { width: 100%; max-width: 800px; display: flex; background: #f1f3f4; padding: 10px 20px; border-radius: 30px; }
-        input { flex: 1; border: none; background: transparent; outline: none; font-size: 16px; padding: 10px; }
-        button { background: none; border: none; cursor: pointer; font-size: 20px; transition: 0.2s; }
-        button:hover { transform: scale(1.1); }
+        .input-container {
+            width: 100%;
+            max-width: 800px;
+            padding: 20px;
+            box-sizing: border-box;
+            position: sticky;
+            bottom: 0;
+            background-color: var(--bg-color);
+        }
+
+        .input-wrapper {
+            background-color: var(--input-bg);
+            border-radius: 25px;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            border: 1px solid transparent;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: #555;
+        }
+
+        input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            padding: 10px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        button {
+            background: transparent;
+            border: none;
+            color: #8e918f;
+            cursor: pointer;
+            font-size: 20px;
+            transition: 0.3s;
+        }
+
+        button:hover { color: white; }
+
+        /* Yükleniyor efekti */
+        .typing { color: #8e918f; font-size: 14px; display: none; margin-left: 50px; }
     </style>
 </head>
 <body>
 
-    <div id="chat-container">
-        <div class="message bot-message">Merhaba! Ben Fok. Bugün sana nasıl yardımcı olabilirim?</div>
+    <div id="sidebar">
+        <div class="new-chat" onclick="location.reload()"><i class="fas fa-plus"></i> Yeni Sohbet</div>
+        <div style="font-size: 12px; color: #8e918f; padding-left: 10px;">Yakınlardakiler</div>
     </div>
 
-    <div class="input-area">
-        <div class="input-wrapper">
-            <input type="text" id="user-input" placeholder="Fok'a bir şeyler yaz..." onkeypress="handleKeyPress(event)">
-            <button onclick="sendMessage()">🚀</button>
+    <div id="main-chat">
+        <div id="chat-window">
+            <div style="text-align: center; margin-top: 100px;">
+                <h1 style="font-size: 32px; background: linear-gradient(to right, #4285f4, #d96570); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Merhaba, Ben Fok</h1>
+                <p style="color: #8e918f;">Size bugün nasıl yardımcı olabilirim?</p>
+            </div>
+        </div>
+
+        <div id="typing-indicator" class="typing">Fok yazıyor...</div>
+
+        <div class="input-container">
+            <div class="input-wrapper">
+                <input type="text" id="user-input" placeholder="Buraya bir şeyler yazın..." onkeypress="if(event.key==='Enter') sendMessage()">
+                <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+            </div>
+            <p style="text-align: center; font-size: 11px; color: #8e918f; margin-top: 10px;">Fok hata yapabilir. Önemli bilgileri kontrol edin.</p>
         </div>
     </div>
 
     <script>
         async function sendMessage() {
-            const input = document.getElementById('user-input');
-            const container = document.getElementById('chat-container');
-            const message = input.value.trim();
+            const input = document.getElementById("user-input");
+            const chatWindow = document.getElementById("chat-window");
+            const typing = document.getElementById("typing-indicator");
+            const text = input.value.trim();
+            
+            if (!text) return;
 
-            if (!message) return;
+            // Karşılama yazısını kaldır (ilk mesajda)
+            if(chatWindow.querySelector('h1')) chatWindow.innerHTML = '';
 
-            // Kullanıcı mesajını ekle
-            container.innerHTML += `<div class="message user-message">${message}</div>`;
-            input.value = '';
-            container.scrollTop = container.scrollHeight;
+            // Kullanıcı mesajı
+            chatWindow.innerHTML += `
+                <div class="message-row">
+                    <div class="icon user-icon"><i class="fas fa-user"></i></div>
+                    <div class="text">${text}</div>
+                </div>
+            `;
+            
+            input.value = "";
+            typing.style.display = "block";
+            chatWindow.scrollTop = chatWindow.scrollHeight;
 
-            // Backend'e (Python) istek at
             try {
-                const response = await fetch('/get_response', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: message })
+                const response = await fetch("/get_response", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: text })
                 });
                 const data = await response.json();
                 
-                // Bot cevabını ekle
-                container.innerHTML += `<div class="message bot-message">${data.reply}</div>`;
-                container.scrollTop = container.scrollHeight;
-            } catch (error) {
-                container.innerHTML += `<div class="message bot-message">Ups! Bir bağlantı sorunu oldu.</div>`;
+                typing.style.display = "none";
+                chatWindow.innerHTML += `
+                    <div class="message-row">
+                        <div class="icon bot-icon"><i class="fas fa-robot"></i></div>
+                        <div class="text">${data.reply}</div>
+                    </div>
+                `;
+            } catch (e) {
+                typing.style.display = "none";
+                chatWindow.innerHTML += `<div class="message-row"><div class="text">Hata oluştu.</div></div>`;
             }
-        }
-
-        function handleKeyPress(e) {
-            if (e.key === 'Enter') sendMessage();
+            chatWindow.scrollTop = chatWindow.scrollHeight;
         }
     </script>
 </body>
