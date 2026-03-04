@@ -21,9 +21,10 @@
             margin: 0;
             display: flex;
             height: 100vh;
+            overflow: hidden;
         }
 
-        /* Kenar Çubuğu (Sidebar) */
+        /* Kenar Çubuğu */
         #sidebar {
             width: 260px;
             background-color: var(--sidebar-bg);
@@ -41,7 +42,9 @@
             cursor: pointer;
             font-size: 14px;
             margin-bottom: 20px;
+            transition: 0.3s;
         }
+        .new-chat:hover { background: #3c3e41; }
 
         /* Ana Sohbet Alanı */
         #main-chat {
@@ -61,31 +64,37 @@
             display: flex;
             flex-direction: column;
             gap: 30px;
+            scroll-behavior: smooth;
         }
 
         .message-row {
             display: flex;
-            gap: 15px;
+            gap: 20px;
             width: 100%;
+            animation: fadeIn 0.3s ease;
         }
 
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
         .icon {
-            width: 35px;
-            height: 35px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
+            font-size: 20px;
         }
 
-        .user-icon { background: #5c5c5c; }
-        .bot-icon { background: linear-gradient(45deg, #4285f4, #9b72cb); }
+        .user-icon { background: #5c5c5c; color: white; font-size: 16px; }
+        .bot-icon { background: transparent; font-size: 28px; }
 
         .text {
             line-height: 1.6;
             font-size: 16px;
             white-space: pre-wrap;
+            padding-top: 5px;
         }
 
         /* Giriş Alanı */
@@ -94,22 +103,22 @@
             max-width: 800px;
             padding: 20px;
             box-sizing: border-box;
-            position: sticky;
-            bottom: 0;
             background-color: var(--bg-color);
         }
 
         .input-wrapper {
             background-color: var(--input-bg);
-            border-radius: 25px;
+            border-radius: 28px;
             padding: 10px 20px;
             display: flex;
             align-items: center;
             border: 1px solid transparent;
+            transition: 0.3s;
         }
 
         .input-wrapper:focus-within {
             border-color: #555;
+            background-color: #28292a;
         }
 
         input {
@@ -117,7 +126,7 @@
             background: transparent;
             border: none;
             color: white;
-            padding: 10px;
+            padding: 12px;
             font-size: 16px;
             outline: none;
         }
@@ -128,38 +137,37 @@
             color: #8e918f;
             cursor: pointer;
             font-size: 20px;
-            transition: 0.3s;
+            padding: 5px;
         }
 
-        button:hover { color: white; }
+        button:hover { color: var(--accent-color); }
 
-        /* Yükleniyor efekti */
-        .typing { color: #8e918f; font-size: 14px; display: none; margin-left: 50px; }
+        .typing { color: #8e918f; font-size: 13px; display: none; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
     <div id="sidebar">
-        <div class="new-chat" onclick="location.reload()"><i class="fas fa-plus"></i> Yeni Sohbet</div>
-        <div style="font-size: 12px; color: #8e918f; padding-left: 10px;">Yakınlardakiler</div>
+        <div class="new-chat" onclick="window.location.reload()"><i class="fas fa-plus"></i> Yeni Sohbet</div>
+        <div style="font-size: 12px; color: #8e918f; padding-left: 10px;">Geçmiş Sohbetler</div>
     </div>
 
     <div id="main-chat">
         <div id="chat-window">
-            <div style="text-align: center; margin-top: 100px;">
-                <h1 style="font-size: 32px; background: linear-gradient(to right, #4285f4, #d96570); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Merhaba, Ben Fok</h1>
-                <p style="color: #8e918f;">Size bugün nasıl yardımcı olabilirim?</p>
+            <div id="welcome-screen" style="text-align: center; margin-top: 100px;">
+                <h1 style="font-size: 40px; background: linear-gradient(to right, #4285f4, #9b72cb, #d96570); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 500;">Merhaba, Ben Fok</h1>
+                <p style="color: #8e918f; font-size: 18px;">Bugün sana nasıl yardımcı olabilirim?</p>
             </div>
         </div>
 
-        <div id="typing-indicator" class="typing">Fok yazıyor...</div>
+        <div id="typing-indicator" class="typing">Fok düşünüyor...</div>
 
         <div class="input-container">
             <div class="input-wrapper">
                 <input type="text" id="user-input" placeholder="Buraya bir şeyler yazın..." onkeypress="if(event.key==='Enter') sendMessage()">
                 <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
             </div>
-            <p style="text-align: center; font-size: 11px; color: #8e918f; margin-top: 10px;">Fok hata yapabilir. Önemli bilgileri kontrol edin.</p>
+            <p style="text-align: center; font-size: 11px; color: #8e918f; margin-top: 10px;">Fok AI bazen hatalı bilgi verebilir.</p>
         </div>
     </div>
 
@@ -167,19 +175,19 @@
         async function sendMessage() {
             const input = document.getElementById("user-input");
             const chatWindow = document.getElementById("chat-window");
+            const welcome = document.getElementById("welcome-screen");
             const typing = document.getElementById("typing-indicator");
             const text = input.value.trim();
             
             if (!text) return;
 
-            // Karşılama yazısını kaldır (ilk mesajda)
-            if(chatWindow.querySelector('h1')) chatWindow.innerHTML = '';
+            if(welcome) welcome.remove();
 
-            // Kullanıcı mesajı
+            // KULLANICI MESAJI (👤 İkonlu)
             chatWindow.innerHTML += `
-                <div class="message-row">               
-                <div class="icon bot-icon" style="background: white; font-size: 20px;">🦭</div>
-                 <div class="text">${text}</div>
+                <div class="message-row">
+                    <div class="icon user-icon"><i class="fas fa-user"></i></div>
+                    <div class="text">${text}</div>
                 </div>
             `;
             
@@ -196,21 +204,20 @@
                 const data = await response.json();
                 
                 typing.style.display = "none";
+                
+                // BOT MESAJI (🦭 İkonlu)
                 chatWindow.innerHTML += `
                     <div class="message-row">
-                        <div class="icon bot-icon"><i class="fas fa-robot"></i></div>
+                        <div class="icon bot-icon">🦭</div>
                         <div class="text">${data.reply}</div>
                     </div>
                 `;
             } catch (e) {
                 typing.style.display = "none";
-                chatWindow.innerHTML += `<div class="message-row"><div class="text">Hata oluştu.</div></div>`;
+                chatWindow.innerHTML += `<div class="message-row"><div class="text" style="color:red;">Hata: Bağlantı kurulamadı.</div></div>`;
             }
             chatWindow.scrollTop = chatWindow.scrollHeight;
         }
     </script>
 </body>
 </html>
-
-
-
