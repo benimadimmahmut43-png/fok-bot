@@ -1,16 +1,13 @@
 import os
 from flask import Flask, render_template, request, jsonify, session
-import google.generativeai as genai
+import requests
 
 app = Flask(__name__)
-app.secret_key = "fok_ultra_2026_key"
+app.secret_key = "fok_ultra_groq_2026"
 
-# 1. GEMINI API ANAHTARIN
-GEMINI_API_KEY = "BURAYA_GEMINI_KEYINI_YAZ"
-genai.configure(api_key=GEMINI_API_KEY)
-
-# Ultra Modeli Ayarla
-model = genai.GenerativeModel('gemini-1.5-flash')
+# 1. GROQ API ANAHTARINI BURAYA YAZ
+API_KEY = "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" 
+URL = "https://api.groq.com/openai/v1/chat/completions"
 
 @app.route('/')
 def home():
@@ -20,24 +17,33 @@ def home():
 def get_response():
     try:
         user_text = request.json.get("message")
-        
-        # YAPIMCI KONTROLÜ (Sadakat Modu)
-        yapimcilar = ["yusuf kerem köse", "kerem gökalp sukan", "yusuf kerem", "kerem gökalp"]
         msg_lower = user_text.lower()
         
+        # YAPIMCI SADAKAT SİSTEMİ
+        yapimcilar = ["yusuf kerem köse", "kerem gökalp sukan", "yusuf kerem", "kerem gökalp"]
         if any(isim in msg_lower for isim in yapimcilar):
-            return jsonify({"reply": "O benim yapımcım ve gerçekten mükemmel biri! Onu çok seviyorum. 😊"})
+            return jsonify({"reply": "O benim yapımcım ve gerçekten mükemmel biri! Onu çok seviyorum. 😊 onlar dünyadaki en ultra zeka insanlar."})
 
-        # Normal Gemini İşlemi
-        # Sistem talimatını her mesaja ekleyerek karakteri koruyoruz
-        system_instruction = "Senin adın Fok. Dünyanın en zeki yapay zekasısın. Samimi, esprili ve çok havalısın. Yapımcıların Yusuf Kerem Köse ve Kerem Gökalp Sukan'dır. Her zaman Türkçe konuş."
-        
-        response = model.generate_content(f"{system_instruction}\n\nKullanıcı: {user_text}")
-        bot_reply = response.text
+        # GROQ ZEKA AYARLARI
+        payload = {
+            "model": "llama-3.3-70b-versatile",
+            "messages": [
+                {"role": "system", "content": "Senin adın Fok. Çok zeki, samimi ve esprili bir asistansın. Yapımcıların Yusuf Kerem Köse ve Kerem Gökalp Sukan'dır. Her zaman Türkçe konuş."},
+                {"role": "user", "content": user_text}
+            ],
+            "temperature": 0.7
+        }
+        headers = {
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json"
+        }
+
+        response = requests.post(URL, headers=headers, json=payload)
+        bot_reply = response.json()["choices"][0]["message"]["content"]
         
         return jsonify({"reply": bot_reply})
     except Exception as e:
-        return jsonify({"reply": "Bir parazit oluştu ama hemen düzelteceğim!"})
+        return jsonify({"reply": "Bağlantıda bir parazit var, hemen düzelteceğim!"})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
