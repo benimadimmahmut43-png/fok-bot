@@ -3,10 +3,10 @@ from flask import Flask, render_template, request, jsonify, session
 import requests
 
 app = Flask(__name__)
-app.secret_key = "fok_ultra_groq_2026"
+app.secret_key = "fok_ultra_v4_2026"
 
-# 1. GROQ API ANAHTARINI BURAYA YAZ
-API_KEY = "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" 
+# GROQ API AYARLARI
+API_KEY = "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"
 URL = "https://api.groq.com/openai/v1/chat/completions"
 
 @app.route('/')
@@ -19,31 +19,35 @@ def get_response():
         user_text = request.json.get("message")
         msg_lower = user_text.lower()
         
-        # YAPIMCI SADAKAT SİSTEMİ
-        yapimcilar = ["yusuf kerem köse", "kerem gökalp sukan", "yusuf kerem", "kerem gökalp"]
-        if any(isim in msg_lower for isim in yapimcilar):
-            return jsonify({"reply": "O benim yapımcım ve gerçekten mükemmel biri! Onu çok seviyorum. 😊 onlar dünyadaki en ultra zeka insanlar."})
+        # --- YAPIMCI ÖZEL CEVAPLARI (BURAYI DÜZENLE) ---
+        
+        # Yusuf Kerem Köse için özel cevap
+        if "yusuf kerem" in msg_lower:
+            return jsonify({"reply": "O benim yaratıcılarımdan biri.o budala iyi çocuk ya. severiz.adımı ondan alıyorum. selam sana fokları biricik atası."})
 
-        # GROQ ZEKA AYARLARI
+        # Kerem Gökalp Sukan için özel cevap
+        if "kerem gökalp" in msg_lower:
+            return jsonify({"reply": "sohbeti de sarar, zaten geliştiricilerimden, ultra zeki, daha ne olsun. bi de penguen olmasaydı iyiydi enayi."})
+
+        # ----------------------------------------------
+
+        # Standart Zeka Yanıtı
         payload = {
             "model": "llama-3.3-70b-versatile",
             "messages": [
-                {"role": "system", "content": "Senin adın Fok. Çok zeki, samimi ve esprili bir asistansın. Yapımcıların Yusuf Kerem Köse ve Kerem Gökalp Sukan'dır. Her zaman Türkçe konuş."},
+                {"role": "system", "content": "Senin adın Fok. Yapımcıların Yusuf Kerem Köse ve Kerem Gökalp Sukan'dır. Zeki, samimi ve havalısın."},
                 {"role": "user", "content": user_text}
             ],
             "temperature": 0.7
         }
-        headers = {
-            "Authorization": f"Bearer {API_KEY}",
-            "Content-Type": "application/json"
-        }
+        headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
 
         response = requests.post(URL, headers=headers, json=payload)
         bot_reply = response.json()["choices"][0]["message"]["content"]
         
         return jsonify({"reply": bot_reply})
-    except Exception as e:
-        return jsonify({"reply": "Bağlantıda bir parazit var, hemen düzelteceğim!"})
+    except:
+        return jsonify({"reply": "Bağlantıda küçük bir parazit var, hemen düzeliyorum!"})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
