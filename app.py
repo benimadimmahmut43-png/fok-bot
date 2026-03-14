@@ -8,7 +8,7 @@ app.secret_key = os.environ.get("SESSION_KEY", "fok_anahtar_v3_2026")
 
 # 1. API ANAHTARIN (Burayı mutlaka kontrol et!)
 # İstersen direkt tırnak içine yazabilirsin: API_KEY = "gsk_..."
-API_KEY = "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" 
+API_KEY = "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" 
 URL = "https://api.groq.com/openai/v1/chat/completions"
 
 @app.route('/')
