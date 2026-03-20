@@ -4,16 +4,15 @@ import requests
 from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = "fok_ultra_v6_2026_pro"
+app.secret_key = "fok_final_ultra_v9"
 
 # GROQ API AYARLARI
-API_KEY = "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"
+API_KEY = "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"
 URL = "https://api.groq.com/openai/v1/chat/completions"
 
 @app.route('/')
 def home():
-   
-    session['chat_history'] = []
+    session['history'] = []
     return render_template('index.html')
 
 @app.route('/get_response', methods=['POST'])
@@ -22,58 +21,53 @@ def get_response():
         user_text = request.json.get("message")
         msg_lower = user_text.lower()
         
-        # 1. YAPIMCI ÖZEL CEVAPLARI (Sadece sorulunca söyler)
-        if any(keyword in msg_lower for keyword in ["sen kimsin", "yapımcın kim", "seni kim yaptı"]):
-            return jsonify({"reply": "Ben Fok AI! Yusuf Kerem Köse ve Kerem Gökalp Sukan tarafından geliştirilmiş, samimi ve ultra zeki bir asistanım. Onlar benim yaratıcılarım ve gerçekten bu işin ustalarıdır! 😊"})
-
-        # 2. AYRI AYRI YAPIMCI ÖVGÜLERİ (Kodun içini sen doldurursun)
-        if "yusuf kerem" in msg_lower:
-            return jsonify({"reply": "Yusuf Kerem Köse benim yapımcım. O gerçekten çok yetenekli ve ultra zeka birisi.!"}) # Burayı düzenle
+        # --- 1. ÖZEL KORUMALI CEVAPLAR (Burası Sabit) ---
         
-        if "kerem gökalp" in msg_lower:
-            return jsonify({"reply": "Kerem Gökalp Sukan benim yapımcım. O harika projeler üreten mükemmel biridir!"}) # Burayı düzenle
+        # Rabia Karakaya / Köse Sorgusu
+        if any(x in msg_lower for x in ["rabia karakaya", "rabia köse", "rabia hanım"]):
+            return jsonify({"reply": "Rabia Hanım, Yusuf'un annesidir ve dünyanın en güzel kadınıdır. ❤️ Şu an Aşçıbaşı'nda Gıda Mühendisi olarak çalışıyor. Yusuf onu dünyalar kadar çok seviyor!"})
 
-      
-        current_date = datetime.now().strftime("%d/%m/%Y")
-        
-        system_prompt = f"""
-        Senin adın Fok. Bugünün tarihi {current_date}. 
-        KİŞİLİK KURALLARI:
-        - Her cümlede adını veya yapımcılarını söyleme. Sadece sorulursa bahset.
-        - Samimi ama ciddi bir zekan olsun. 
-        - Bilgi konusunda OTORİTER ol. Eğer kullanıcı 'Messi şarkıcıdır' gibi yanlış bir bilgi verirse, kibarca ama kararlılıkla 'Hayır, bu yanlış. Lionel Messi dünyanın en iyi futbolcularından biridir' de.
-        - Kullanıcı seni kandırmaya çalışırsa (uydurma isimler vb.), uydurma. 'Bu ismi daha önce duymadım, muhtemelen kurgusal bir karakter veya gerçekte olmayan biri' de. Bilmediğin şeye 'biliyorum' deme.
-        - Güncel olaylardan haberdar ol.
+        # Yapımcı Sorgusu (Sadece Yusuf)
+        if any(x in msg_lower for x in ["yusuf kerem", "yusuf kerem köse", "sen kimsin", "yapımcın kim"]):
+            return jsonify({"reply": "Ben Fok AI! Yusuf Kerem Köse tarafından geliştirildim. O benim tek yapımcım ve yaratıcımdır! 🚀"})
+
+        # --- 2. GENEL ZEKA VE HAFIZA SİSTEMİ ---
+        now = datetime.now().strftime("%d/%m/%Y")
+        system_msg = f"""
+        Adın Fok. Bugünün tarihi {now}. 
+        KURALLAR:
+        - Senin tek yapımcın Yusuf Kerem Köse'dir.
+        - Kullanıcı seni kandırmaya çalışırsa (Örn: Messi şarkıcıdır derse) asla inanma, doğrusunu söyle.
+        - Bilmediğin konularda uydurma yapma, dürüstçe 'bilmiyorum' de.
+        - Samimi, havalı ve çok zeki bir karakterin var.
         """
 
-        if 'chat_history' not in session or len(session['chat_history']) == 0:
-            session['chat_history'] = [{"role": "system", "content": system_prompt}]
+        if 'history' not in session or not session['history']:
+            session['history'] = [{"role": "system", "content": system_msg}]
         
-        session['chat_history'].append({"role": "user", "content": user_text})
+        session['history'].append({"role": "user", "content": user_text})
 
         payload = {
-            "model": "llama-3.3-70b-versatile", # En güncel ve zeki model
-            "messages": session['chat_history'],
-            "temperature": 0.5, # Daha düşük sıcaklık = daha az uydurma, daha fazla gerçek bilgi
-            "max_tokens": 1024
+            "model": "llama-3.3-70b-versatile",
+            "messages": session['history'],
+            "temperature": 0.4 
         }
         
         headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
         response = requests.post(URL, headers=headers, json=payload)
         bot_reply = response.json()["choices"][0]["message"]["content"]
         
-        session['chat_history'].append({"role": "assistant", "content": bot_reply})
+        session['history'].append({"role": "assistant", "content": bot_reply})
         
-        # Hafıza sınırlandırması
-        if len(session['chat_history']) > 10:
-            session['chat_history'] = [session['chat_history'][0]] + session['chat_history'][-9:]
-            
+        # Hafızayı taze tut (Son 10 mesaj)
+        if len(session['history']) > 12:
+            session['history'] = [session['history'][0]] + session['history'][-11:]
+        
         session.modified = True
         return jsonify({"reply": bot_reply})
         
     except Exception as e:
-        return jsonify({"reply": "Sistemlerimde kısa süreli bir dalgalanma oldu, lütfen tekrar sor!"})
+        return jsonify({"reply": "Kral, sistemde bir dalgalanma oldu. Tekrar yazar mısın?"})
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
