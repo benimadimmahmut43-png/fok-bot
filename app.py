@@ -6,8 +6,8 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = "fok_final_ultra_v9"
 
-# GROQ API AYARLARI
-API_KEY = "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"
+
+API_KEY = "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"
 URL = "https://api.groq.com/openai/v1/chat/completions"
 
 @app.route('/')
