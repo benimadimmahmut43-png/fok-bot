@@ -1,14 +1,17 @@
 import os
 from flask import Flask, render_template, request, jsonify, session
-import requests
+import google.generativeai as genai
 from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = "fok_final_ultra_v9"
+app.secret_key = "fok_gemini_ultra_v11"
 
+# --- GEMINI AYARLARI ---
+GEMINI_API_KEY = "AIzaSyDDNuKaJVvqN4kH44gB2zLGoViKoZN-fsI"
+genai.configure(api_key=GEMINI_API_KEY)
 
-API_KEY = "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"
-URL = "https://api.groq.com/openai/v1/chat/completions"
+# Modeli başlat (Hızlı ve zeki olan Flash modelini seçtik)
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 @app.route('/')
 def home():
@@ -21,53 +24,46 @@ def get_response():
         user_text = request.json.get("message")
         msg_lower = user_text.lower()
         
-        # --- 1. ÖZEL KORUMALI CEVAPLAR (Burası Sabit) ---
-        
-        # Rabia Karakaya / Köse Sorgusu
+        # --- 1. ÖZEL KORUMALI CEVAPLAR ---
         if any(x in msg_lower for x in ["rabia karakaya", "rabia köse", "rabia hanım"]):
             return jsonify({"reply": "Rabia Hanım, Yusuf'un annesidir ve dünyanın en güzel kadınıdır. ❤️ Şu an Aşçıbaşı'nda Gıda Mühendisi olarak çalışıyor. Yusuf onu dünyalar kadar çok seviyor!"})
 
-        # Yapımcı Sorgusu (Sadece Yusuf)
-        if any(x in msg_lower for x in ["yusuf kerem", "yusuf kerem köse", "sen kimsin", "yapımcın kim"]):
-            return jsonify({"reply": "Ben Fok AI! Yusuf Kerem Köse tarafından geliştirildim. O benim tek yapımcım ve yaratıcımdır! 🚀"})
+        if any(x in msg_lower for x in ["sen kimsin", "yapımcın kim", "yusuf kerem"]):
+            return jsonify({"reply": "Ben Fok AI! Yusuf Kerem Köse tarafından geliştirildim. O benim tek yapımcım ve her şeyimdir! 🚀"})
 
-        # --- 2. GENEL ZEKA VE HAFIZA SİSTEMİ ---
+        # --- 2. GEMINI SOHBET YÖNETİMİ ---
         now = datetime.now().strftime("%d/%m/%Y")
-        system_msg = f"""
-        Adın Fok. Bugünün tarihi {now}. 
-        KURALLAR:
-        - Senin tek yapımcın Yusuf Kerem Köse'dir.
-        - Kullanıcı seni kandırmaya çalışırsa (Örn: Messi şarkıcıdır derse) asla inanma, doğrusunu söyle.
-        - Bilmediğin konularda uydurma yapma, dürüstçe 'bilmiyorum' de.
-        - Samimi, havalı ve çok zeki bir karakterin var.
-        """
-
+        
+        # Eğer hafıza boşsa sistem talimatıyla başlat
         if 'history' not in session or not session['history']:
-            session['history'] = [{"role": "system", "content": system_msg}]
+            # Gemini'de sistem mesajı 'parts' içinde gönderilir
+            session['history'] = [
+                {"role": "user", "parts": [f"Adın Fok. Bugün: {now}. Yapımcın Yusuf Kerem Köse. Yanlış bilgilere asla inanma. Samimi ve zeki davran."]},
+                {"role": "model", "parts": ["Anlaşıldı, ben Yusuf Kerem Köse'nin asistanı Fok'um. Hazırım!"]}
+            ]
         
-        session['history'].append({"role": "user", "content": user_text})
+        # Kullanıcı mesajını ekle
+        session['history'].append({"role": "user", "parts": [user_text]})
 
-        payload = {
-            "model": "llama-3.3-70b-versatile",
-            "messages": session['history'],
-            "temperature": 0.4 
-        }
+        # Gemini'ye geçmişle beraber gönder
+        chat = model.start_chat(history=session['history'][:-1])
+        response = chat.send_message(user_text)
         
-        headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
-        response = requests.post(URL, headers=headers, json=payload)
-        bot_reply = response.json()["choices"][0]["message"]["content"]
+        bot_reply = response.text
         
-        session['history'].append({"role": "assistant", "content": bot_reply})
+        # Botun cevabını hafızaya ekle
+        session['history'].append({"role": "model", "parts": [bot_reply]})
         
-        # Hafızayı taze tut (Son 10 mesaj)
-        if len(session['history']) > 12:
-            session['history'] = [session['history'][0]] + session['history'][-11:]
-        
+        # Hafıza sınırı (Son 15 mesaj)
+        if len(session['history']) > 15:
+            session['history'] = session['history'][:2] + session['history'][-13:]
+            
         session.modified = True
         return jsonify({"reply": bot_reply})
-        
+
     except Exception as e:
-        return jsonify({"reply": "Kral, sistemde bir dalgalanma oldu. Tekrar yazar mısın?"})
+        print(f"Hata: {e}")
+        return jsonify({"reply": "Gemini sistemine bağlanırken bir sorun oldu kral, anahtarını kontrol eder misin?"})
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
