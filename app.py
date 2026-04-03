@@ -8,9 +8,7 @@ app.secret_key = "fok_gemini_ultra_v11"
 
 # --- GEMINI AYARLARI ---
 GEMINI_API_KEY = "AIzaSyDDNuKaJVvqN4kH44gB2zLGoViKoZN-fsI"
-genai.configure(api_key=GEMINI_API_KEY)
-
-# Modeli başlat (Hızlı ve zeki olan Flash modelini seçtik)
+genai.configure(api_key=GEMINI_API_KEY
 model = genai.GenerativeModel('gemini-1.5-flash')
 
 @app.route('/')
